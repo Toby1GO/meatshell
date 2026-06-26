@@ -2644,8 +2644,9 @@ export component AppWindow inherits Window {
         cancel => { root.confirm-delete-batch = false; root.confirm-delete-open = false; }
     }
 
-    // Host-key confirmation (#109-5). Reuses the confirm-dialog card; the
-    // backdrop / Cancel both reject (safe default = don't connect).
+    // Host-key confirmation (#109-5). Reuses the confirm-dialog card; backdrop
+    // clicks are ignored so an accidental outside click doesn't reject and cache
+    // a "do not trust" decision for this run.
     ConfirmDialog {
         width: parent.width;
         height: parent.height;
@@ -2654,6 +2655,7 @@ export component AppWindow inherits Window {
         message: root.hostkey-message;
         detail: root.hostkey-detail;
         confirm-label: root.hostkey-confirm-label;
+        cancel-on-backdrop: false;
         confirm => { root.hostkey-accept(); }
         cancel => { root.hostkey-reject(); }
     }

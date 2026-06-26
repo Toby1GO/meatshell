@@ -78,7 +78,9 @@ open /Applications/meatshell.app
     / `~/Library/Application Support/meatshell/sessions.json` (macOS)
 - [x] SSH (`russh`, pure Rust): password / private key / encrypted key (passphrase)
 - [x] SFTP browser + upload / download (drag-and-drop) + in-terminal ZMODEM (`sz`) receive
+- [x] SFTP upload progress is surfaced automatically for file-picker and drag-and-drop uploads
 - [x] SSH port forwarding / tunnels: local -L / remote -R / dynamic -D (SOCKS5)
+- [x] Host-key confirmation ignores accidental backdrop clicks and only reuses accepted trust decisions
 - [x] Quick commands + command box (broadcast to all sessions) + command history
 - [x] Serial / Telnet sessions
 - [x] Outbound proxy (SOCKS5 / HTTP)

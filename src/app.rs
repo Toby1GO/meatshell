@@ -1300,9 +1300,11 @@ fn handle_file_drop(win: &AppWindow, sftp_handles: &SftpHandles, path: String) {
     // matches the upload button's behaviour (drag-and-drop is a separate path).
     let sync = win.get_sync_input() && win.get_sync_upload_enabled();
     let other_dirs = if sync { terminal_sftp_paths(win) } else { HashMap::new() };
+    let mut queued = false;
     if let Ok(handles) = sftp_handles.lock() {
         if let Some(h) = handles.get(&active) {
             h.upload(path.clone(), dir);
+            queued = true;
         }
         if sync {
             for (id, h) in handles.iter() {
@@ -1311,9 +1313,13 @@ fn handle_file_drop(win: &AppWindow, sftp_handles: &SftpHandles, path: String) {
                 }
                 if let Some(d) = other_dirs.get(id).filter(|d| !d.is_empty()) {
                     h.upload(path.clone(), d.clone());
+                    queued = true;
                 }
             }
         }
+    }
+    if queued {
+        win.set_download_open(true);
     }
 }
 
@@ -3317,6 +3323,7 @@ thread_local! {
     static HOSTKEY_QUEUE: RefCell<VecDeque<PendingHostKey>> = RefCell::new(VecDeque::new());
     /// host:port → decision, remembered for this run so a duplicate prompt
     /// (second connection to the same host) is answered without a new dialog.
+    /// Only accepted decisions are inserted; rejections are handled per prompt.
     static HOSTKEY_DECIDED: RefCell<HashMap<String, bool>> = RefCell::new(HashMap::new());
 }
 
@@ -3417,9 +3424,11 @@ fn resolve_front_hostkey(win: &AppWindow, accept: bool) {
     let has_next = HOSTKEY_QUEUE.with(|q| {
         let mut q = q.borrow_mut();
         if let Some(p) = q.pop_front() {
-            HOSTKEY_DECIDED.with(|d| {
-                d.borrow_mut().insert(format!("{}:{}", p.host, p.port), accept);
-            });
+            if accept {
+                HOSTKEY_DECIDED.with(|d| {
+                    d.borrow_mut().insert(format!("{}:{}", p.host, p.port), true);
+                });
+            }
             for r in &p.responders {
                 r.respond(accept);
             }
@@ -3921,6 +3930,7 @@ fn wire_sftp_callbacks(
                             .collect()
                     })
                     .unwrap_or_default();
+                let weak_for_popup = weak.clone();
                 std::thread::spawn(move || {
                     // The remote SFTP upload handles a file or a whole directory;
                     // only the local picker differs (#85). Folder uploads one dir;
@@ -3943,10 +3953,12 @@ fn wire_sftp_callbacks(
                     if locals.is_empty() {
                         return;
                     }
+                    let mut queued = false;
                     if let Ok(handles) = sftp_handles.lock() {
                         if let Some(h) = handles.get(&tab_id) {
                             for local in &locals {
                                 h.upload(local.clone(), remote_dir.clone());
+                                queued = true;
                             }
                         }
                         // Mirror to the other online sessions, each into its own
@@ -3955,9 +3967,15 @@ fn wire_sftp_callbacks(
                             if let Some(h) = handles.get(id) {
                                 for local in &locals {
                                     h.upload(local.clone(), dir.clone());
+                                    queued = true;
                                 }
                             }
                         }
+                    }
+                    if queued {
+                        let _ = weak_for_popup.upgrade_in_event_loop(|w| {
+                            w.set_download_open(true);
+                        });
                     }
                 });
             },

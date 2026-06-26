@@ -74,7 +74,9 @@ open /Applications/meatshell.app
     / `~/Library/Application Support/meatshell/sessions.json`（macOS）
 - [x] SSH（`russh`，纯 Rust）：密码 / 私钥 / 加密私钥（密码短语）
 - [x] SFTP 文件浏览 + 上传 / 下载（拖拽）+ 终端内 ZMODEM（`sz`）接收
+- [x] SFTP 上传进度自动弹出显示（文件选择上传和拖拽上传都支持）
 - [x] SSH 端口转发 / 隧道：本地 -L / 远程 -R / 动态 -D（SOCKS5）
+- [x] 主机密钥确认弹窗忽略误点空白，只复用已确认信任的决定
 - [x] 快捷命令 + 命令输入框（可群发到所有会话）+ 命令历史
 - [x] 串口 / Telnet 会话
 - [x] 出站代理（SOCKS5 / HTTP）
