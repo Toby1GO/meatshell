@@ -3,6 +3,17 @@
 All notable changes are documented here. 本文件记录所有重要变更。
 中英对照（English first, 中文在后）.
 
+## [0.4.19] - 2026-06-26
+
+### Fixed / 修复
+
+- **Host-key confirmation no longer rejects on accidental backdrop clicks.** Clicking outside the
+  host-key prompt is now ignored, so a missed button press does not poison the next connection with
+  an "unknown key" failure.
+- **SFTP upload progress is shown immediately.** Uploads started from drag-and-drop or the file
+  picker now open the transfer panel automatically, making it clear whether the upload is still in
+  progress or complete.
+
 ## [0.4.18] - 2026-06-26
 
 ### Added / 新增
@@ -1197,6 +1208,7 @@ All notable changes are documented here. 本文件记录所有重要变更。
 - **Screenshots in the README** (`docs/screenshots/`, sensitive info redacted).
   **README 增加截图**（`docs/screenshots/`，敏感信息已打码）。
 
+[0.4.19]: https://github.com/Toby1GO/meatshell/releases/tag/v0.4.19
 [0.3.8]: https://github.com/jeff141/meatshell/releases/tag/v0.3.8
 [0.3.7]: https://github.com/jeff141/meatshell/releases/tag/v0.3.7
 [0.3.3]: https://github.com/jeff141/meatshell/releases/tag/v0.3.3

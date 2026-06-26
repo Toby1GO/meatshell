@@ -807,7 +807,7 @@ pub fn run() -> Result<()> {
     // --- In-app update check (#48) -----------------------------------------
     // "Download" on the banner opens the latest-release page in the browser.
     window.on_open_update_url(move || {
-        let url = "https://github.com/jeff141/meatshell/releases/latest";
+        let url = "https://github.com/Toby1GO/meatshell/releases/latest";
         #[cfg(windows)]
         let _ = std::process::Command::new("explorer").arg(url).spawn();
         #[cfg(target_os = "macos")]
@@ -822,7 +822,7 @@ pub fn run() -> Result<()> {
         let weak = window.as_weak();
         std::thread::spawn(move || {
             let body = match ureq::get(
-                "https://api.github.com/repos/jeff141/meatshell/releases/latest",
+                "https://api.github.com/repos/Toby1GO/meatshell/releases/latest",
             )
             .set("User-Agent", "meatshell-update-check")
             .timeout(std::time::Duration::from_secs(8))
