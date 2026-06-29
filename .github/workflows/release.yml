@@ -3,7 +3,8 @@ name: Release
 # Build the Windows desktop package.
 #  - Push a tag like `v0.4.20` -> attaches the Windows archives to that Release.
 #  - Run manually -> enter a version, e.g. `0.4.20` or `v0.4.20`; the workflow
-#    creates / updates that GitHub Release and uploads the Windows artifacts.
+#    updates Cargo.toml/Cargo.lock, creates / updates that GitHub Release, and
+#    uploads the Windows artifacts.
 
 on:
   push:
@@ -53,16 +54,42 @@ jobs:
           echo "VERSION=$TAG" >> "$GITHUB_ENV"
           echo "VERSION_NUM=${TAG#v}" >> "$GITHUB_ENV"
 
-      - name: Check Cargo version
+      - name: Apply Cargo version
+        shell: pwsh
+        run: |
+          $version = "$env:VERSION_NUM"
+
+          $toml = Get-Content Cargo.toml -Raw
+          $toml = [regex]::Replace($toml, '(?m)^version = "[^"]+"', "version = `"$version`"", 1)
+          Set-Content Cargo.toml $toml -NoNewline -Encoding utf8NoBOM
+
+          $lock = Get-Content Cargo.lock -Raw
+          $lock = [regex]::Replace(
+            $lock,
+            '(?ms)(\[\[package\]\]\s+name = "meatshell"\s+version = ")[^"]+(")',
+            "`${1}$version`${2}",
+            1
+          )
+          Set-Content Cargo.lock $lock -NoNewline -Encoding utf8NoBOM
+
+          git diff -- Cargo.toml Cargo.lock
+
+      - name: Commit Cargo version
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -eu
-          CARGO_VERSION="$(grep -m1 '^version = ' Cargo.toml | sed -E 's/version = "([^"]+)"/\1/')"
-          if [ "$CARGO_VERSION" != "$VERSION_NUM" ]; then
-            echo "Cargo.toml version ($CARGO_VERSION) does not match release version ($VERSION_NUM)." >&2
-            echo "Update Cargo.toml before publishing so the app reports the correct version." >&2
-            exit 1
+          if ! git diff --quiet -- Cargo.toml Cargo.lock; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add Cargo.toml Cargo.lock
+            git commit -m "chore(release): prepare ${VERSION}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
+
+      - name: Resolve release target
+        shell: bash
+        run: echo "RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -123,7 +150,7 @@ jobs:
         with:
           tag_name: ${{ env.VERSION }}
           name: meatshell ${{ env.VERSION }}
-          target_commitish: ${{ github.sha }}
+          target_commitish: ${{ env.RELEASE_SHA }}
           files: ${{ env.ASSET }}
           fail_on_unmatched_files: true
 
@@ -133,6 +160,6 @@ jobs:
         with:
           tag_name: ${{ env.VERSION }}
           name: meatshell ${{ env.VERSION }}
-          target_commitish: ${{ github.sha }}
+          target_commitish: ${{ env.RELEASE_SHA }}
           files: ${{ env.MSI }}
           fail_on_unmatched_files: false
