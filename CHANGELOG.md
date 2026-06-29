@@ -3,6 +3,14 @@
 All notable changes are documented here. 本文件记录所有重要变更。
 中英对照（English first, 中文在后）.
 
+## Unreleased
+
+### Fixed / 修复
+
+- **Session host input is sanitized and validated before saving.** Whitespace copied into the
+  Host / IP field is stripped automatically, and non-IP / non-domain values are rejected with an
+  inline error instead of being saved.
+
 ## [0.4.19] - 2026-06-26
 
 ### Fixed / 修复

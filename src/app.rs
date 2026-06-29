@@ -1419,6 +1419,43 @@ fn sync_sessions_to_model(store: &ConfigStore, model: &VecModel<SessionInfo>) {
 // Session callbacks (welcome page + dialog)
 // ---------------------------------------------------------------------------
 
+fn normalize_session_host(input: &str) -> String {
+    input.chars().filter(|c| !c.is_whitespace()).collect()
+}
+
+fn is_valid_session_host(host: &str) -> bool {
+    if host.parse::<std::net::IpAddr>().is_ok() {
+        return true;
+    }
+    if host.is_empty() || host.len() > 253 {
+        return false;
+    }
+    if looks_like_ipv4_dotted_quad(host) {
+        return false;
+    }
+    host.split('.').all(|label| {
+        let b = label.as_bytes();
+        !b.is_empty()
+            && b.len() <= 63
+            && b.iter()
+                .all(|&c| c.is_ascii_alphanumeric() || c == b'-' || c == b'_')
+            && b[0] != b'-'
+            && b[b.len() - 1] != b'-'
+    })
+}
+
+fn looks_like_ipv4_dotted_quad(host: &str) -> bool {
+    let mut parts = host.split('.');
+    let Some(a) = parts.next() else { return false };
+    let Some(b) = parts.next() else { return false };
+    let Some(c) = parts.next() else { return false };
+    let Some(d) = parts.next() else { return false };
+    parts.next().is_none()
+        && [a, b, c, d]
+            .iter()
+            .all(|p| !p.is_empty() && p.chars().all(|ch| ch.is_ascii_digit()))
+}
+
 fn wire_session_callbacks(
     window: &AppWindow,
     store: Rc<RefCell<ConfigStore>>,
@@ -1788,6 +1825,21 @@ fn wire_session_callbacks(
         let edit_forwards = edit_forwards.clone();
         window.on_session_dialog_submit(move |draft: SessionDraft| {
             let id = draft.id.to_string();
+            let kind = crate::config::SessionKind::from_str(&draft.kind.to_string());
+            let host = normalize_session_host(&draft.host.to_string());
+            if kind != crate::config::SessionKind::Serial {
+                if !is_valid_session_host(&host) {
+                    if let Some(w) = weak.upgrade() {
+                        w.set_dialog_host(host.into());
+                        w.set_dialog_host_invalid(true);
+                    }
+                    return;
+                }
+                if let Some(w) = weak.upgrade() {
+                    w.set_dialog_host(host.clone().into());
+                    w.set_dialog_host_invalid(false);
+                }
+            }
             // The edit dialog never echoes the real password (issue #10): a blank
             // field while editing means "keep the existing password" rather than
             // "clear it".  Only overwrite when the user actually typed something.
@@ -1800,15 +1852,14 @@ fn wire_session_callbacks(
             } else {
                 Secret::new(draft.password.to_string())
             };
-            let kind = crate::config::SessionKind::from_str(&draft.kind.to_string());
             // Auto-name: serial → port label; otherwise user@host, or just the
             // host when no username was given (#110).
             let auto_name = match kind {
                 crate::config::SessionKind::Serial => {
                     format!("{} @{}", draft.serial_port, draft.baud_rate)
                 }
-                _ if draft.user.trim().is_empty() => draft.host.to_string(),
-                _ => format!("{}@{}", draft.user, draft.host),
+                _ if draft.user.trim().is_empty() => host.clone(),
+                _ => format!("{}@{}", draft.user, host),
             };
             // Telnet defaults to port 23, SSH to 22; serial ignores port.
             let default_port = if kind == crate::config::SessionKind::Telnet {
@@ -1823,7 +1874,7 @@ fn wire_session_callbacks(
                 } else {
                     draft.name.to_string()
                 },
-                host: draft.host.to_string(),
+                host,
                 port: if draft.port <= 0 {
                     default_port
                 } else {
@@ -6549,6 +6600,35 @@ mod key_tests {
             split_proxy("127.0.0.1:1080"),
             ("socks5".into(), "127.0.0.1:1080".into())
         );
+    }
+
+    #[test]
+    fn session_host_normalization_removes_clipboard_whitespace() {
+        assert_eq!(
+            normalize_session_host("  192.168. 1.10\r\n"),
+            "192.168.1.10"
+        );
+        assert_eq!(normalize_session_host("\texample.com "), "example.com");
+    }
+
+    #[test]
+    fn session_host_validation_accepts_ips_and_dns_names() {
+        assert!(is_valid_session_host("192.168.1.10"));
+        assert!(is_valid_session_host("::1"));
+        assert!(is_valid_session_host("example.com"));
+        assert!(is_valid_session_host("server-01.internal"));
+        assert!(is_valid_session_host("jump_box"));
+    }
+
+    #[test]
+    fn session_host_validation_rejects_non_host_formats() {
+        assert!(!is_valid_session_host(""));
+        assert!(!is_valid_session_host("http://example.com"));
+        assert!(!is_valid_session_host("example.com:22"));
+        assert!(!is_valid_session_host("999.999.999.999"));
+        assert!(!is_valid_session_host("-bad.example"));
+        assert!(!is_valid_session_host("bad.example-"));
+        assert!(!is_valid_session_host("a;rm -rf /"));
     }
 
     #[test]

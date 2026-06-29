@@ -477,6 +477,7 @@ export component AppWindow inherits Window {
     in-out property <string> dialog-id;
     in-out property <string> dialog-name;
     in-out property <string> dialog-host;
+    in-out property <bool> dialog-host-invalid: false;
     in-out property <string> dialog-port: "22";
     in-out property <string> dialog-user;
     in-out property <string> dialog-auth: "password";
@@ -2596,6 +2597,7 @@ export component AppWindow inherits Window {
         draft-id <=> root.dialog-id;
         draft-name <=> root.dialog-name;
         draft-host <=> root.dialog-host;
+        host-invalid <=> root.dialog-host-invalid;
         draft-port <=> root.dialog-port;
         draft-user <=> root.dialog-user;
         draft-auth <=> root.dialog-auth;

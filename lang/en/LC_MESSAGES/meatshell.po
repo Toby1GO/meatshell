@@ -78,6 +78,9 @@ msgstr "e.g. production web-01"
 msgid "Host / IP"
 msgstr "Host / IP"
 
+msgid "Please enter a valid IP address or domain name."
+msgstr "Please enter a valid IP address or domain name."
+
 msgid "Port"
 msgstr "Port"
 

@@ -78,6 +78,9 @@ msgstr "例如：生产环境 web-01"
 msgid "Host / IP"
 msgstr "主机 / IP"
 
+msgid "Please enter a valid IP address or domain name."
+msgstr "请输入正确的 IP 地址或域名。"
+
 msgid "Port"
 msgstr "端口"
 
