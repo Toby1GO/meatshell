@@ -1642,9 +1642,9 @@ fn wire_session_callbacks(
                 w.set_dialog_port(session.port.to_string().into());
                 w.set_dialog_user(session.user.clone().into());
                 w.set_dialog_auth(session.auth.as_str().into());
-                // Never echo the stored password back into the UI (issue #10) —
-                // leave it blank; a blank field on save keeps the existing one.
-                w.set_dialog_password("".into());
+                // Editing should be explicit: show the saved secret in a masked
+                // field so the user can reveal, fix, or clear it before saving.
+                w.set_dialog_password(session.password.as_str().into());
                 w.set_dialog_key_path(session.private_key_path.clone().into());
                 let (proxy_type, proxy_hostport) = split_proxy(&session.proxy);
                 w.set_dialog_proxy_type(proxy_type.into());
@@ -1840,18 +1840,7 @@ fn wire_session_callbacks(
                     w.set_dialog_host_invalid(false);
                 }
             }
-            // The edit dialog never echoes the real password (issue #10): a blank
-            // field while editing means "keep the existing password" rather than
-            // "clear it".  Only overwrite when the user actually typed something.
-            let password = if draft.password.is_empty() {
-                store
-                    .borrow()
-                    .get(&id)
-                    .map(|s| s.password.clone())
-                    .unwrap_or_default()
-            } else {
-                Secret::new(draft.password.to_string())
-            };
+            let password = Secret::new(draft.password.to_string());
             // Auto-name: serial → port label; otherwise user@host, or just the
             // host when no username was given (#110).
             let auto_name = match kind {

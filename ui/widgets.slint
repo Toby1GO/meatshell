@@ -1,4 +1,5 @@
 import { Theme } from "theme.slint";
+import "fonts/MaterialIcons-Regular.ttf";
 
 // --- IconButton ------------------------------------------------------------
 // A small square action button that accepts a single-character glyph (or short text).
@@ -104,11 +105,14 @@ export component LabeledInput inherits VerticalLayout {
     in property <string> placeholder;
     in-out property <string> value;
     in property <bool> password: false;
+    in property <bool> revealable: false;
+    in-out property <bool> revealed: false;
     in property <bool> auto-focus: false;   // grab focus when shown (dialog fields)
     callback accepted();   // Enter pressed in the field
     callback canceled();   // Esc pressed in the field (#140-3)
     spacing: 4px;
     public function focus-input() { input.focus(); }
+    property <bool> masked: root.password && !(root.revealable && root.revealed);
 
     Text {
         text: label;
@@ -126,7 +130,7 @@ export component LabeledInput inherits VerticalLayout {
         input := TextInput {
             x: 10px;
             y: 0px;
-            width: parent.width - 20px;
+            width: parent.width - 20px - ((root.password && root.revealable) ? 30px : 0px);
             height: parent.height;
             text <=> root.value;
             color: Theme.text-primary;
@@ -137,7 +141,7 @@ export component LabeledInput inherits VerticalLayout {
             font-size: Theme.fs-md;
             vertical-alignment: center;
             single-line: true;
-            input-type: root.password ? InputType.password : InputType.text;
+            input-type: root.masked ? InputType.password : InputType.text;
             init => { if (root.auto-focus) { self.focus(); } }
             accepted => { root.accepted(); }
             key-pressed(e) => {
@@ -150,11 +154,36 @@ export component LabeledInput inherits VerticalLayout {
         if value == "" : Text {
             x: 10px;
             y: 0px;
+            width: parent.width - 20px - ((root.password && root.revealable) ? 30px : 0px);
             height: parent.height;
             text: placeholder;
             color: Theme.text-muted;
             font-size: Theme.fs-md;
             vertical-alignment: center;
+            overflow: elide;
+        }
+
+        if root.password && root.revealable : Rectangle {
+            x: parent.width - self.width - 3px;
+            y: 2px;
+            width: 28px;
+            height: 28px;
+            border-radius: Theme.radius-sm;
+            background: eye-touch.has-hover ? Theme.bg-hover : transparent;
+            Text {
+                text: root.revealed ? "\u{E8F5}" : "\u{E8F4}";
+                font-family: "Material Icons";
+                color: eye-touch.has-hover ? Theme.text-primary : Theme.text-secondary;
+                font-size: 18px;
+                width: parent.width;
+                height: parent.height;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+            eye-touch := TouchArea {
+                mouse-cursor: pointer;
+                clicked => { root.revealed = !root.revealed; input.focus(); }
+            }
         }
     }
 }

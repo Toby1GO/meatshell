@@ -105,6 +105,7 @@ export component SessionDialog inherits Rectangle {
     in-out property <bool> host-invalid: false;
     in-out property <string> draft-auth: "password";
     in-out property <string> draft-password;
+    in-out property <bool> draft-password-visible: false;
     in-out property <string> draft-key-path;
     in-out property <string> draft-proxy-type: "none";  // "none" | "socks5" | "http"
     in-out property <string> draft-proxy-hostport;
@@ -143,6 +144,7 @@ export component SessionDialog inherits Rectangle {
         if (self.is-open) {
             self.host-missing = false;
             self.host-invalid = false;
+            self.draft-password-visible = false;
         }
     }
     changed draft-host => {
@@ -293,8 +295,10 @@ export component SessionDialog inherits Rectangle {
 
             if root.draft-kind == "ssh" && root.draft-auth == "password" : LabeledInput {
                 label: @tr("Password");
-                placeholder: root.is-editing ? @tr("Leave blank to keep the current password") : "••••••••";
+                placeholder: root.is-editing ? @tr("Edit or clear the saved password") : "••••••••";
                 password: true;
+                revealable: true;
+                revealed <=> root.draft-password-visible;
                 value <=> root.draft-password;
             }
 
@@ -366,9 +370,11 @@ export component SessionDialog inherits Rectangle {
             if root.draft-kind == "ssh" && root.draft-auth == "key" : LabeledInput {
                 label: @tr("Key passphrase");
                 placeholder: root.is-editing
-                    ? @tr("Leave blank to keep the current passphrase")
+                    ? @tr("Edit or clear the saved passphrase")
                     : @tr("Leave blank if the key isn't encrypted");
                 password: true;
+                revealable: true;
+                revealed <=> root.draft-password-visible;
                 value <=> root.draft-password;
             }
 

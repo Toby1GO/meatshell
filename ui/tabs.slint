@@ -20,9 +20,12 @@ component SingleTab inherits Rectangle {
     max-width: 160px;          // 新增：防止长名称把 tab 撑得过宽
     horizontal-stretch: 0;    // 新增：不参与 TabBar 的等分拉伸，保持自然宽度
     border-radius: Theme.radius-sm;
-    background: active ? Theme.bg-panel
+    border-width: active ? 1px : 0px;
+    border-color: active ? Theme.accent : transparent;
+    clip: true;
+    background: active ? Theme.bg-active
         : (touch.has-hover ? Theme.bg-hover : transparent);
-    animate background { duration: 120ms; }
+    animate background, border-color { duration: 120ms; }
 
     // Declared FIRST so the HorizontalLayout's children (close button) are at
     // a higher z-order and receive their own click events.
@@ -50,6 +53,7 @@ component SingleTab inherits Rectangle {
             text: info.title;
             color: active ? Theme.text-primary : Theme.text-secondary;
             font-size: Theme.fs-sm;
+            font-weight: active ? 700 : 400;
             vertical-alignment: center;
             overflow: elide;
             horizontal-stretch: 1;
@@ -62,6 +66,15 @@ component SingleTab inherits Rectangle {
             y: (parent.height - self.height) / 2;
             clicked => { root.closed(); }
         }
+    }
+
+    Rectangle {
+        x: 8px;
+        y: parent.height - self.height;
+        width: parent.width - 16px;
+        height: 3px;
+        border-radius: 2px;
+        background: active ? Theme.accent : transparent;
     }
 }
 
